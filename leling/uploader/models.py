@@ -9,8 +9,9 @@ class Question(models.Model):
     id = models.AutoField(primary_key=True)
     created_time = models.DateTimeField('创建时间', default=now)
     last_mod_time = models.DateTimeField('修改时间', default=now)
-    question_text = models.CharField(max_length=200)
-    
+    question_text = models.TextField()
+    media_path = models.CharField(max_length=200)
+
     class Meta:
         ordering = ['id']
         verbose_name = "题目"
