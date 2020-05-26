@@ -1,17 +1,48 @@
-from django.shortcuts import render, get_object_or_404
-
+from django.http import HttpResponse
+from django.shortcuts import get_object_or_404
 # Create your views here.
+from django.template import loader
 from django.views import generic
 
-from ..uploader.models import Question
+from .models import Question
 
 class IndexView(generic.ListView):
     template_name = 'loader/index.html'
     context_object_name = 'question_list'
 
     def get_queryset(self):
-        """Return the last five published questions."""
-        return Question.objects.order_by('-id')[:5]
+        return Question.objects.order_by('-id')
 
-def detail(request, question_id):
+
+def question_index(request, question_id):
     question = get_object_or_404(Question, pk=question_id)
+    template = loader.get_template('loader/question-index.html')
+    context = {
+        'question': question, }
+    return HttpResponse(template.render(context, request))
+
+
+def interaction(request, question_id):
+    question = get_object_or_404(Question, pk=question_id)
+    template = loader.get_template('loader/question-index.html')
+    context = {
+        'question': question, }
+    return HttpResponse(template.render(context, request))
+
+
+def with_answer(request, question_id):
+    question = get_object_or_404(Question, pk=question_id)
+    template = loader.get_template('loader/question-index.html')
+    context = {
+        'question': question, }
+    return HttpResponse(template.render(context, request))
+
+
+def without_answer(request, question_id):
+    question = get_object_or_404(Question, pk=question_id)
+    template = loader.get_template('loader/question-index.html')
+    context = {
+        'question': question, }
+    return HttpResponse(template.render(context, request))
+
+# helper methods

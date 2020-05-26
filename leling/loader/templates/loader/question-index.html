@@ -1,0 +1,6 @@
+<ul>
+    <li><a href="{% url 'loader:interaction' question.id %}">做题</a></li>
+    <li><a href="{% url 'loader:with-answer' question.id %}">题目（附答案）</a></li>
+    <li><a href="{% url 'loader:without-answer' question.id %}">题目（无答案）</a></li>
+</ul>
+

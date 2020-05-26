@@ -1,0 +1,9 @@
+{% if type_list %}
+    <ul>
+    {% for type in type_list %}
+<li><a href="/uploader/{{type[1]}}">{{ type[0] }}</a></li>
+    {% endfor %}
+    </ul>
+{% else %}
+    <p>No types are available.</p>
+{% endif %}

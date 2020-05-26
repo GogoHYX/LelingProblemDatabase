@@ -1,0 +1,18 @@
+<h1>{{ question.question_text }}</h1>
+
+{% if error_message %}<p><strong>{{ error_message }}</strong></p>{% endif %}
+
+<form action="{% url 'uploader:add'%}" method="post">
+{% csrf_token %}
+{% for choice in question.choice_set.all %}
+    <input type="radio" name="choice" id="choice{{ forloop.counter }}" value="{{ choice.id }}">
+    <label for="choice{{ forloop.counter }}">{{ choice.choice_text }}</label><br>
+{% endfor %}
+    <label for="question_text_id">题干</label>
+    <input type="text" name="question_text" id="question_text_id">
+    <br>
+    <label for="grade_id">题干</label>
+    <select name="grade" id="grade_id"></select>
+
+    <input type="submit" value="Vote">
+</form>
