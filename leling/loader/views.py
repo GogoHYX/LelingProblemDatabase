@@ -66,9 +66,12 @@ def with_answer(request, question_id):
 
 def without_answer(request, question_id):
     question = get_object_or_404(Question, pk=question_id)
-    template = loader.get_template('loader/question-index.html')
+    template = loader.get_template('loader/without-answer.html')
+    stem = question.stem()
     context = {
-        'question': question, }
+        'question': question,
+        'stem': stem
+    }
     return HttpResponse(template.render(context, request))
 
 # helper methods

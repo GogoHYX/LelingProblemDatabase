@@ -112,13 +112,6 @@ class Question(models.Model):
         ans = re.findall(self.ANSWER_PATTEN, self.question_text)
         return ans
 
-    def stem(self):
-        underline = '__________'
-        pat = re.compile(r'(?<!\\)\{(.*)(?<!\\)\}')
-        stem = re.sub(pat, underline, self.question_text)
-        stem = re.sub(underline + '$', '', stem)
-        return stem
-
     # ex. correct_ans = '{T}'
     # ans = 'T'
     # return a dict = { answer: (score(0-100), comment)}
@@ -165,14 +158,17 @@ class Question(models.Model):
     #   [(False, 'A', -50, ''), (False, 'B', 50, 'Right'), (False, 'C', 50, 'Right')]
     #   ]
     # return = [(100, [(1, '')]), (0, [('A', ''), ('B', 'Right)])]
-    def grade_answer(self, ans_list, rubrics):
+    def grade_answer(self, ans_list):
+        rubrics = self.rubric()
+        if len(rubrics) == 0:
+            raise
         if len(ans_list) != len(rubrics):
             raise Exception
         result = []
         for i in range(len(ans_list)):
             ans = ans_list[i]
             rub = rubrics[i]
-            comment = ''
+            comments = []
             score = 0
             ans_type = ans[0]
             for r in rub:
@@ -183,25 +179,27 @@ class Question(models.Model):
                     num = ans_tup[0]
                     if sample[0] <= num <= sample[1] and rubric_score > score:
                         score = rubric_score
-                        comment = r[3]
+                        comment = (num, r[3])
+                        comments.append(comment)
                 else:
                     for a in ans_tup:
                         if a == sample:
                             score += rubric_score
-                    score = min(100, score)
-                    score = max(0, score)
-                    
+                            comment = (a, r[3])
+                            comments.append(comment)
 
+                score = min(100, score)
+                score = max(0, score)
+                result.append((score, comments))
 
+        return result
 
-            for a in ans:
-                pass
-            result.append((score, comment))
-        return 0
-
-
-
-
+    def stem(self):
+        underline = '__________'
+        stem = re.sub(self.ANSWER_PATTEN, underline, self.question_text)
+        stem = restore_chars(stem)
+        stem = re.sub(underline + '$', '', stem)
+        return stem
 
 
 
@@ -213,11 +211,11 @@ class Question(models.Model):
 
 def escape_chars(s):
     for tup in Question.special_char_list:
-        s = re.sub(tup[0], tup[1], s)
+        s = re.sub(tup[1], tup[0], s)
     return s
 
 
 def restore_chars(s):
     for tup in Question.special_char_list:
-        s = re.sub(tup[1], tup[0], s)
+        s = re.sub(tup[0], tup[1], s)
     return s
