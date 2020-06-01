@@ -25,26 +25,15 @@ def question_index(request, question_id):
 
 def result(request, question_id):
     question = get_object_or_404(Question, pk=question_id)
-    func_dict = {
-        'TF': __TFresult
-    }
-    return func_dict[question.type](request, question)
+    rub = question.rubric()
 
-
-def __TFresult(request, question):
-    ans = question.answer()
-    score = 0
-    if request.POST['choice'] == ans:
-        score += 100
-    return HttpResponse(str(score) + '%')
+    return HttpResponse('')
 
 
 def interaction(request, question_id):
     question = get_object_or_404(Question, pk=question_id)
-    func_dict = {
-        'TF': __TFinteraction
-    }
-    return func_dict[question.type](request, question)
+    template = loader.get_template('loader/TFinteraction.html')
+    return
 
 
 def __TFinteraction(request, question):
@@ -58,9 +47,14 @@ def __TFinteraction(request, question):
 
 def with_answer(request, question_id):
     question = get_object_or_404(Question, pk=question_id)
-    template = loader.get_template('loader/question-index.html')
+    template = loader.get_template('loader/with-answer.html')
+    stem = question.stem()
+    rub = question.rubric()
     context = {
-        'question': question, }
+        'question': question,
+        'stem': stem,
+        'rubric': rub,
+    }
     return HttpResponse(template.render(context, request))
 
 
@@ -70,7 +64,7 @@ def without_answer(request, question_id):
     stem = question.stem()
     context = {
         'question': question,
-        'stem': stem
+        'stem': stem,
     }
     return HttpResponse(template.render(context, request))
 

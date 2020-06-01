@@ -112,50 +112,61 @@ class Question(models.Model):
         ans = re.findall(self.ANSWER_PATTEN, self.question_text)
         return ans
 
-    # ex. correct_ans = '{T}'
-    # ans = 'T'
-    # return a dict = { answer: (score(0-100), comment)}
-    # return empty dict if the question is essay
+    # return
+    # rubrics = [
+    #   ['NM', (False, (0,2), 50, ''), (True, (1,1), 100, '')],
+    #   ['MC', (False, 'A', -50, ''), (False, 'B', 50, 'Right'), (False, 'C', 50, 'Right')]
+    #   ]
     def rubric(self):
         answers = self.answer()
         rubrics = []
         for ans in answers:
             ans = ans[1:-1]
-            rub = []
             is_numeric = False
             if re.match('#', ans):
                 is_numeric = True
                 ans = ans[1:]
+            rub = [is_numeric]
             choices = re.findall(r'(?:~|=).*', ans)
+            if choices is None:
+                choices = [ans, ]
             for choice in choices:
                 try:
                     comment = restore_chars(re.search(r'#((?:.|\s)*)', choice).group(1))
                 except:
                     comment = ''
+                score = 0
                 if re.match('~', choice):
                     is_correct = False
-                    score = 0
                 else:
                     is_correct = True
-                    try:
-                        match = re.match(r'=%(-?(?:[1-9]?[0-9]|100))%(.*)', choice)
-                        score = int(match.group(1))
-                        choice = match.group(2)
-                    except:
-                        score = 100
-                option = restore_chars(choice[1:])
+                    score = 100
+                choice = choice[1:]
+                try:
+                    match = re.search(r'%(-?(?:[1-9]?[0-9]|100))%(.*)', choice)
+                    score = int(match.group(1))
+                    choice = match.group(2)
+                except:
+                    pass
+                option = restore_chars(choice)
                 if is_numeric:
-                    interval = re.match(r'(\d+(?:\.\d)?\d*)..(\d+(?:\.\d)?\d*)', option)
-                    option = (float(interval.group(1)), float(match.group(2)))
+                    interval = re.search(r'(\d+(?:\.\d)?\d*)..(\d+(?:\.\d)?\d*)', option)
+                    if interval is None:
+                        interval = re.search(r'(\d+(?:\.\d)?\d*):(\d+(?:\.\d)?\d*)', option)
+                        mean = float(interval.group(1))
+                        delta = float(interval.group(2))
+                        option = (mean-delta, mean+delta)
+                    else:
+                        option = (float(interval.group(1)), float(match.group(2)))
 
                 rub.append((is_correct, option, score, comment))
             rubrics.append(rub)
         return rubrics
 
-    # ans_list = [('NM', (1.1)),('MA',('A', 'B'))]
+    # ans_list = [(1.1),('A', 'B')]
     # rubrics = [
-    #   [(False, (0,2), 50, ''), (True, (1,1), 100, '')],
-    #   [(False, 'A', -50, ''), (False, 'B', 50, 'Right'), (False, 'C', 50, 'Right')]
+    #   ['NM', (False, (0,2), 50, ''), (True, (1,1), 100, '')],
+    #   ['MC', (False, 'A', -50, ''), (False, 'B', 50, 'Right'), (False, 'C', 50, 'Right')]
     #   ]
     # return = [(100, [(1, '')]), (0, [('A', ''), ('B', 'Right)])]
     def grade_answer(self, ans_list):
@@ -170,19 +181,18 @@ class Question(models.Model):
             rub = rubrics[i]
             comments = []
             score = 0
-            ans_type = ans[0]
-            for r in rub:
+            is_numeric = rub[0]
+            for r in rub[1:]:
                 sample = r[1]
                 rubric_score = r[2]
-                ans_tup = ans[1]
-                if ans_type == 'NM':
-                    num = ans_tup[0]
+                if is_numeric:
+                    num = ans[0]
                     if sample[0] <= num <= sample[1] and rubric_score > score:
                         score = rubric_score
                         comment = (num, r[3])
                         comments.append(comment)
                 else:
-                    for a in ans_tup:
+                    for a in ans:
                         if a == sample:
                             score += rubric_score
                             comment = (a, r[3])
