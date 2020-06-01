@@ -1,0 +1,10 @@
+<p class="stem" name="stem" id="stem_id">{{stem}}</p>
+<br>
+<form action="{% url 'loader:result' question.id %}" method="post">
+    {% csrf_token %}
+    <input type="radio" name="choice" id="choiceT" value="T">
+    <label for="choiceT">T</label><br>
+    <input type="radio" name="choice" id="choiceF" value="F">
+    <label for="choiceF">F</label><br>
+    <input type="submit" value="submit">
+</form>

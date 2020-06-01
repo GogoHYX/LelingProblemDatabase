@@ -56,6 +56,7 @@ class Question(models.Model):
     essay = 'ES'
     fill_in_blank = 'FB'
     numeric_math = 'NM'
+    multiple_answer = 'MA'
 
     TYPE_DICT = {
         multiple_choice: ('选择题', 'multiple-choice'),
@@ -63,6 +64,7 @@ class Question(models.Model):
         essay: ('主观题', 'essay'),
         fill_in_blank: ('文字填空题', 'fill-in-blank'),
         numeric_math: ('数字填空题', 'numeric-math'),
+        multiple_answer: ('多选题', 'multiple-answer'),
     }
 
     TYPE_CHOICES = [
@@ -71,6 +73,7 @@ class Question(models.Model):
         (essay, '主观题'),
         (fill_in_blank, '文字填空题'),
         (numeric_math, '数字填空题'),
+        (multiple_answer, '多选题'),
     ]
 
     TYPE_SLUGS = [('选择题', 'multiple-choice'),
@@ -78,6 +81,7 @@ class Question(models.Model):
                   ('主观题', 'essay'),
                   ('文字填空题', 'fill-in-blank'),
                   ('数字填空题', 'numeric-math'),
+                  ('多选题', 'multiple-answer'),
                   ]
 
     type = models.CharField(
@@ -95,29 +99,125 @@ class Question(models.Model):
         return str(self.subject) + ' ' + ', '.join([str(t) for t in self.tag.all()])
 
     special_char_list = [
-        (r'\~', '~'),
-        (r'\=', '='),
-        (r'\#', '#'),
-        (r'\{', '{'),
-        (r'\}', '}')
+        (r'\\~', '~'),
+        (r'\\=', '='),
+        (r'\\#', '#'),
+        (r'\\{', '{'),
+        (r'\\}', '}')
     ]
 
+    ANSWER_PATTEN = re.compile(r'(?<!\\)({(?:.|\s)*?(?<!\\)})')
+
     def answer(self):
-        pat = re.compile(r'[^\\]\{(.*)[^\\]\}')
-        ans = re.search(pat, self.question_text)
+        ans = re.findall(self.ANSWER_PATTEN, self.question_text)
         return ans
 
-    def escape_chars(self, s):
-        for tup in self.special_char_list:
-            s = re.sub(tup[0], tup[1], s)
-        return s
+    def stem(self):
+        underline = '__________'
+        pat = re.compile(r'(?<!\\)\{(.*)(?<!\\)\}')
+        stem = re.sub(pat, underline, self.question_text)
+        stem = re.sub(underline + '$', '', stem)
+        return stem
 
-    def restore_chars(self, s):
-        for tup in self.special_char_list:
-            s = re.sub(tup[1], tup[0], s)
-        return s
+    # ex. correct_ans = '{T}'
+    # ans = 'T'
+    # return a dict = { answer: (score(0-100), comment)}
+    # return empty dict if the question is essay
+    def rubric(self):
+        answers = self.answer()
+        rubrics = []
+        for ans in answers:
+            ans = ans[1:-1]
+            rub = []
+            is_numeric = False
+            if re.match('#', ans):
+                is_numeric = True
+                ans = ans[1:]
+            choices = re.findall(r'(?:~|=).*', ans)
+            for choice in choices:
+                try:
+                    comment = restore_chars(re.search(r'#((?:.|\s)*)', choice).group(1))
+                except:
+                    comment = ''
+                if re.match('~', choice):
+                    is_correct = False
+                    score = 0
+                else:
+                    is_correct = True
+                    try:
+                        match = re.match(r'=%(-?(?:[1-9]?[0-9]|100))%(.*)', choice)
+                        score = int(match.group(1))
+                        choice = match.group(2)
+                    except:
+                        score = 100
+                option = restore_chars(choice[1:])
+                if is_numeric:
+                    interval = re.match(r'(\d+(?:\.\d)?\d*)..(\d+(?:\.\d)?\d*)', option)
+                    option = (float(interval.group(1)), float(match.group(2)))
+
+                rub.append((is_correct, option, score, comment))
+            rubrics.append(rub)
+        return rubrics
+
+    # ans_list = [('NM', (1.1)),('MA',('A', 'B'))]
+    # rubrics = [
+    #   [(False, (0,2), 50, ''), (True, (1,1), 100, '')],
+    #   [(False, 'A', -50, ''), (False, 'B', 50, 'Right'), (False, 'C', 50, 'Right')]
+    #   ]
+    # return = [(100, [(1, '')]), (0, [('A', ''), ('B', 'Right)])]
+    def grade_answer(self, ans_list, rubrics):
+        if len(ans_list) != len(rubrics):
+            raise Exception
+        result = []
+        for i in range(len(ans_list)):
+            ans = ans_list[i]
+            rub = rubrics[i]
+            comment = ''
+            score = 0
+            ans_type = ans[0]
+            for r in rub:
+                sample = r[1]
+                rubric_score = r[2]
+                ans_tup = ans[1]
+                if ans_type == 'NM':
+                    num = ans_tup[0]
+                    if sample[0] <= num <= sample[1] and rubric_score > score:
+                        score = rubric_score
+                        comment = r[3]
+                else:
+                    for a in ans_tup:
+                        if a == sample:
+                            score += rubric_score
+                    score = min(100, score)
+                    score = max(0, score)
+                    
+
+
+
+            for a in ans:
+                pass
+            result.append((score, comment))
+        return 0
+
+
+
+
+
+
 
     class Meta:
         ordering = ['id']
         verbose_name = "题目"
         verbose_name_plural = verbose_name
+
+
+def escape_chars(s):
+    for tup in Question.special_char_list:
+        s = re.sub(tup[0], tup[1], s)
+    return s
+
+
+def restore_chars(s):
+    for tup in Question.special_char_list:
+        s = re.sub(tup[1], tup[0], s)
+    return s
