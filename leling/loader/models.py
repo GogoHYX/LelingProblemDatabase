@@ -127,21 +127,27 @@ class Question(models.Model):
                 is_numeric = True
                 ans = ans[1:]
             rub = [is_numeric]
-            choices = re.findall(r'(?:~|=).*', ans)
-            if choices is None:
-                choices = [ans, ]
+            choices = re.findall(r'(?:~|=)[^~=]*', ans)
+            if len(choices) == 0:
+                choices.append(ans)
             for choice in choices:
                 try:
                     comment = restore_chars(re.search(r'#((?:.|\s)*)', choice).group(1))
+                    choice = re.sub(r'#((?:.|\s)*)', '', choice)
                 except:
                     comment = ''
                 score = 0
                 if re.match('~', choice):
                     is_correct = False
+                    choice = choice[1:]
+                elif re.match('=', choice):
+                    is_correct = True
+                    score = 100
+                    choice = choice[1:]
                 else:
                     is_correct = True
                     score = 100
-                choice = choice[1:]
+                choice = re.sub(r'\s*$', '', choice)
                 try:
                     match = re.search(r'%(-?(?:[1-9]?[0-9]|100))%(.*)', choice)
                     score = int(match.group(1))
@@ -150,14 +156,14 @@ class Question(models.Model):
                     pass
                 option = restore_chars(choice)
                 if is_numeric:
-                    interval = re.search(r'(\d+(?:\.\d)?\d*)..(\d+(?:\.\d)?\d*)', option)
+                    interval = re.search(r'(\d+(?:\.\d)?\d*)\.\.(\d+(?:\.\d)?\d*)', option)
                     if interval is None:
                         interval = re.search(r'(\d+(?:\.\d)?\d*):(\d+(?:\.\d)?\d*)', option)
                         mean = float(interval.group(1))
                         delta = float(interval.group(2))
                         option = (mean-delta, mean+delta)
                     else:
-                        option = (float(interval.group(1)), float(match.group(2)))
+                        option = (float(interval.group(1)), float(interval.group(2)))
 
                 rub.append((is_correct, option, score, comment))
             rubrics.append(rub)
