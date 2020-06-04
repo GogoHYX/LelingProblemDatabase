@@ -32,15 +32,15 @@ def result(request, question_id):
 
 def interaction(request, question_id):
     question = get_object_or_404(Question, pk=question_id)
-    template = loader.get_template('loader/TFinteraction.html')
-    return
-
-
-def __TFinteraction(request, question):
-    template = loader.get_template('loader/TFinteraction.html')
+    template = loader.get_template('loader/interaction.html')
+    stem = question.stem()
+    rub, ans_type = question.rubric()
+    ans_type = [t.type.get_name_display() for t in ans_type]
     context = {
         'question': question,
-        'stem': question.stem(),
+        'stem': stem,
+        'rubric': rub,
+        'ans_type': ans_type,
     }
     return HttpResponse(template.render(context, request))
 
@@ -49,11 +49,13 @@ def with_answer(request, question_id):
     question = get_object_or_404(Question, pk=question_id)
     template = loader.get_template('loader/with-answer.html')
     stem = question.stem()
-    rub = question.rubric()
+    rub, ans_type = question.rubric()
+    ans_type = [t.type.get_name_display() for t in ans_type]
     context = {
         'question': question,
         'stem': stem,
         'rubric': rub,
+        'ans_type': ans_type,
     }
     return HttpResponse(template.render(context, request))
 

@@ -1,0 +1,36 @@
+{% load loader_tag %}
+<p class="stem" id="stem">{{stem}}</p>
+<br>
+{% if rubric %}
+    <form action="{% url 'loader:result' question.id %}" method="post">
+        {% csrf_token %}
+        {% for rub in rubric %}
+            {% with ans_type|index:forloop.counter0 as sub_type %}
+                <p>{{ forloop.counter }}. {{ sub_type }} </p>
+                {% if sub_type == "选择题"%}
+                    {% for r in rub %}
+                        <input type="radio" name="choice" id="choice{{ forloop.counter }}" value="{{ r.1 }}">
+                        <label for="choice{{ forloop.counter }}">{{ r.1 }}</label><br>
+                    {% endfor %}
+                {% elif sub_type == "判断题" %}
+                    <input type="radio" name="choice" id="choiceT" value="T">
+                    <label for="choiceT">T</label><br>
+                    <input type="radio" name="choice" id="choiceF" value="F">
+                    <label for="choiceF">F</label><br>
+                {% elif sub_type == "多选题" %}
+                    {% for r in rub %}
+                        <input type="checkbox" name="{{ r.1 }}" id="choice{{ forloop.counter }}" value="{{ r.1 }}">
+                        <label for="choice{{ forloop.counter }}">{{ r.1 }}</label><br>
+                    {% endfor %}
+                {% elif sub_type == "数字填空题" %}
+                    <input type="number" step="any" name="answer" id="answer" value="">
+                {% else %}
+                    <input type="text" name="answer" id="answer" value="">
+                {% endif %}
+            {% endwith %}
+        {% endfor%}
+        <input type="submit" value="submit">
+    </form>
+{% else %}
+    <p>No answers are available.</p>
+{%endif%}
