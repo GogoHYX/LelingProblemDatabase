@@ -1,0 +1,56 @@
+{% load loader_tag %}
+<p class="stem" id="stem">{{stem}}</p>
+<br>
+{% if rubric %}
+    <form>
+        {% for rub in rubric %}
+            {% with ans_type|index:forloop.counter0 as sub_type %}
+                <p>{{ forloop.counter }}. {{ sub_type }} </p>
+                {% if sub_type == "选择题"%}
+                    {% for r in rub %}
+                        <input readonly type="radio" name="{{forloop.parentloop.counter}}" id="choice{{ forloop.counter }}" value="{{ r.1 }}">
+                        <label for="choice{{ forloop.counter }}">{{ r.1 }}</label><br>
+                    {% endfor %}
+                {% elif sub_type == "判断题" %}
+                    <input readonly type="radio" name="{{forloop.counter}}" id="choiceT" value="T">
+                    <label for="choiceT">T</label><br>
+                    <input readonly type="radio" name="{{forloop.counter}}" id="choiceF" value="F">
+                    <label for="choiceF">F</label><br>
+                {% elif sub_type == "多选题" %}
+                    {% for r in rub %}
+                        {% with exist = False %}
+                        {% for a in ans_list|index:forloop.parentloop.counter0 %}
+                            {% if r.1 == a %}
+
+                            {% endif %}
+                        {% endfor%}
+                        {% if r.1 == a %}
+                            <input readonly type="checkbox" name="{{forloop.parentloop.counter}}" id="choice{{ forloop.counter }}" value="{{ r.1 }}" checked>
+                            <label for="choice{{ forloop.counter }}">{{ r.1 }}
+                                {% if r.2 <= 0 %}
+                                    <span color="red"> <-- wrong</span>
+                                {% else%}
+                                    <span color="green"> <-- correct</span>
+                                {% endif %}
+                            {% endif %}
+                            </label><br>
+                        {% else %}
+                            <input readonly type="checkbox" name="{{forloop.parentloop.counter}}" id="choice{{ forloop.counter }}" value="{{ r.1 }}">
+                            <label for="choice{{ forloop.counter }}">{{ r.1 }}
+                                {% if r.2 > 0 %}
+                                    <span color="green"> <-- correct</span>
+                                {% endif %}
+                            </label><br>
+                        {% endif %}
+                    {% endfor %}
+                {% elif sub_type == "数字填空题" %}
+                    <input readonly type="number" step="any" name="{{forloop.counter}}" id="answer{{ forloop.counter }}" value="">
+                {% else %}
+                    <input readonly type="text" name="{{forloop.counter}}" id="answer{{ forloop.counter }}" value="">
+                {% endif %}
+            {% endwith %}
+        {% endfor%}
+    </form>
+{% else %}
+    <p>No answers are available.</p>
+{%endif%}
